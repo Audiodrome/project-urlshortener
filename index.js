@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const { db } = require('./dbconn.js');
+const { db, ObjectId } = require('./src/db_connect.js');
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -20,12 +20,15 @@ app.get('/api/hello', function(req, res) {
   res.json({ greeting: 'hello API' });
 });
 
-app.get('/api/inserttest', async (req, res) => {
+app.get('/api/test', async (req, res) => {
+  let urlID = new ObjectId();
+  console.log("hex url id", urlID.toHexString());
+  console.log("hex to dec", parseInt(urlID.toHexString(), 16))
   let result = await db.collection("tinyurl").insertOne({
     count: 0
   });
   console.log(result);
-  res.send(result).status(204);
+  res.send({ help: "HELP" }).status(204);
 });
 
 app.listen(port, function() {

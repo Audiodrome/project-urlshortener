@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(process.env.MONGO_URI, {
@@ -26,3 +26,4 @@ run().catch(console.dir);
 const db = client.db("test");
 
 module.exports.db = db;
+module.exports.ObjectId = ObjectId;

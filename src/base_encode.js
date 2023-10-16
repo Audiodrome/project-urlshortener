@@ -21,3 +21,5 @@ function base62Encode(n, cypher = ALPHA_NUM) {
   console.log(encode);
   return encode;
 }
+
+module.exports.base62Encode = base62Encode;

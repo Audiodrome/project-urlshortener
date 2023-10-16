@@ -18,12 +18,27 @@ async function run() {
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
-    // await client.close();
+    await client.close();
   }
 }
 run().catch(console.dir);
 
 const db = client.db("test");
+
+// init counter for shorturls
+async function count() {
+  try {
+    let result = await db.collection("tinyurl").findOne({ count_id: "One" });
+    if (result === null) {
+      result = await db.collection("tinyurl").insertOne({ count_id: "One", counter: 0 });
+    }
+    console.log("result", result);
+  } finally {
+    console.log("Hurray!");
+  }
+}
+
+count().catch(console.error);
 
 module.exports.db = db;
 module.exports.ObjectId = ObjectId;

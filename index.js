@@ -5,6 +5,7 @@ const app = express();
 const dns = require('node:dns');
 const bodyParser = require('body-parser');
 const { db, ObjectId } = require('./src/db_connect.js');
+const { base62Encode } = require('./src/base_encode.js')
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -23,35 +24,30 @@ app.get('/api/hello', function(req, res) {
   res.json({ greeting: 'hello API' });
 });
 
-app.get('/api/test', async (req, res) => {
-  let urlID = new ObjectId();
-  console.log("hex url id", urlID.toHexString());
-  console.log("hex to dec", parseInt(urlID.toHexString(), 16))
-  let result = await db.collection("tinyurl").insertOne({
-    count: 0
-  });
-  console.log(result);
-  res.send({ help: "HELP" }).status(204);
-});
-
-app.post('/api/shorturl', (req, res) => {
-  console.log(req.body);
+app.post('/api/shorturl', async (req, res) => {
+  // console.log(req.body);
   const options = {
     family: 6,
     hints: dns.ADDRCONFIG | dns.V4MAPPED,
   };
 
-  dns.promises.lookup(req.body.url, options).then(result => {
+  try {
+    let result = await dns.promises.lookup(req.body.url, options);
+    
     console.log('address: %j family: IPv%s', result.address, result.family);
-    return db.collection("tinyurl").insertOne({ test: req.body.url });
-  }).then(doc => {
-    console.log(doc);
-    return res.status(201).json({ original_url: req.body.url, short_url: "placeholder" });
-  }).catch(err => {
-    console.error(err);
-    return res.status(404).send('Address not found.');
-  });
 
+    let urlID = new ObjectId();
+    let shortURL = base62Encode(BigInt(parseInt(urlID.toHexString(), 16)));
+    let doc = { original_url: req.body.url, short_url: shortURL };
+    
+    result = await db.collection("tinyurl").insertOne(doc);
+    console.log("doc", result);
+
+    res.status(201).json(doc);
+  } catch (err) {
+    console.error(err);
+    res.status(404).send('Address not found.');
+  }
 });
 
 app.listen(port, function() {

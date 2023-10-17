@@ -48,13 +48,14 @@ app.post('/api/shorturl', async (req, res) => {
 
   try {
     const re = new RegExp('^https?:\/\/', 'i');
-    let url = req.body.url.replace(re, '');
-    
+    // let url = req.body.url.replace(re, '');
+    let isValidURL = re.test(req.body.url);
     let doc = {};
-    let result = await dns.promises.lookup(url, options);
-    result = await db.collection("tinyurl").findOne({ original_url: req.body.url });
+    // let result = await dns.promises.lookup(url, options);
+    console.log("req.body.url", req.body.url);
+    let result = await db.collection("tinyurl").findOne({ original_url: req.body.url });
     console.log("Result ******", result);
-    if (result === null) {
+    if (result === null && isValidURL) {
       // add new url to db and increment count by 1
       result = await db.collection("tinyurl").findOneAndUpdate(
         { count_id: "One" }, 

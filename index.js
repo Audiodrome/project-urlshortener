@@ -24,6 +24,18 @@ app.get('/api/hello', function(req, res) {
   res.json({ greeting: 'hello API' });
 });
 
+app.get('/api/shorturl/:shorturl', async (req, res) => {
+  console.log("Params", req.params);
+  try {
+    let result = await db.collection("tinyurl").findOne({ short_url: Number(req.params.shorturl) });
+    console.log("Result", result);
+    res.redirect(301, `https://www.${result.original_url}`);
+  } catch (err) {
+    console.error(err);
+    res.send('Redirect failed.');
+  }
+});
+
 app.post('/api/shorturl', async (req, res) => {
   const options = {
     family: 6,

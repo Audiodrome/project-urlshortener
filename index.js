@@ -29,7 +29,11 @@ app.get('/api/shorturl/:shorturl', async (req, res) => {
   try {
     let result = await db.collection("tinyurl").findOne({ short_url: Number(req.params.shorturl) });
     console.log("Result", result);
-    res.redirect(301, `https://www.${result.original_url}`);
+    if (result === null || req.params.shorturl === 'undefined')
+      res.redirect('http://localhost:3000');
+    else
+      // res.redirect(301, result.original_url);
+      res.redirect(result.original_url);
   } catch (err) {
     console.error(err);
     res.send('Redirect failed.');
@@ -43,12 +47,13 @@ app.post('/api/shorturl', async (req, res) => {
   };
 
   try {
-    let result = await dns.promises.lookup(req.body.url, options);
+    const re = new RegExp('^https?:\/\/', 'i');
+    let url = req.body.url.replace(re, '');
+    
     let doc = {};
-    console.log('address: %j family: IPv%s', result.address, result.family);
+    let result = await dns.promises.lookup(url, options);
     result = await db.collection("tinyurl").findOne({ original_url: req.body.url });
-    console.log("find", result);
-
+    console.log("Result ******", result);
     if (result === null) {
       // add new url to db and increment count by 1
       result = await db.collection("tinyurl").findOneAndUpdate(
@@ -56,23 +61,24 @@ app.post('/api/shorturl', async (req, res) => {
         { $inc: { counter: 1 } },
         { returnDocument: 'after'}
       );
-      doc = { 
-        original_url: req.body.url,
-        short_url: result.counter
-      };
+
+      doc = { original_url: req.body.url, short_url: result.counter };
+
       await db.collection("tinyurl").insertOne(doc);
       delete doc._id;
+
+      console.log("DOC ******", doc);
     } else {
-      doc = { 
-        original_url: result.original_url,
-        short_url: result.short_url
-      };
+      doc = { original_url: result.original_url, short_url: result.short_url };
+      console.log("DOC ******", doc);
     }
     
-    res.status(201).json(doc);
+    // res.status(201).json(doc);
+    res.json(doc);
   } catch (err) {
-    console.error(err);
-    res.status(404).json({ error: 'invalid url' });
+    // console.error(err);
+    // res.status(404).json({ error: 'invalid url' });
+    res.json({ error: 'invalid url' });
   }
 });
 

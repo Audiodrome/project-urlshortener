@@ -25,6 +25,46 @@ app.get('/api/hello', function(req, res) {
 });
 
 app.post('/api/shorturl', async (req, res) => {
+  const options = {
+    family: 6,
+    hints: dns.ADDRCONFIG | dns.V4MAPPED,
+  };
+
+  try {
+    let result = await dns.promises.lookup(req.body.url, options);
+    let doc = {};
+    console.log('address: %j family: IPv%s', result.address, result.family);
+    result = await db.collection("tinyurl").findOne({ original_url: req.body.url });
+    console.log("find", result);
+
+    if (result === null) {
+      // add new url to db and increment count by 1
+      result = await db.collection("tinyurl").findOneAndUpdate(
+        { count_id: "One" }, 
+        { $inc: { counter: 1 } },
+        { returnDocument: 'after'}
+      );
+      doc = { 
+        original_url: req.body.url,
+        short_url: result.counter
+      };
+      await db.collection("tinyurl").insertOne(doc);
+      delete doc._id;
+    } else {
+      doc = { 
+        original_url: result.original_url,
+        short_url: result.short_url
+      };
+    }
+    
+    res.status(201).json(doc);
+  } catch (err) {
+    console.error(err);
+    res.status(404).json({ error: 'invalid url' });
+  }
+});
+
+app.post('/api/encodeshorturl', async (req, res) => {
   // console.log(req.body);
   const options = {
     family: 6,

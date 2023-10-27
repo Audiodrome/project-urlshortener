@@ -48,37 +48,31 @@ app.post('/api/shorturl', async (req, res) => {
 
   try {
     const re = new RegExp('^https?:\/\/', 'i');
-    // let url = req.body.url.replace(re, '');
+
     let isValidURL = re.test(req.body.url);
-    let doc = {};
-    // let result = await dns.promises.lookup(url, options);
-    console.log("req.body.url", req.body.url);
-    let result = await db.collection("tinyurls").findOne({ original_url: req.body.url });
-    console.log("Result ******", result);
-    if (result === null && isValidURL) {
+    let doc = await db.collection("tinyurls").findOne({ original_url: req.body.url });
+    console.log("Does doc exist?: ******", doc);
+
+    if (doc === null && isValidURL) {
       // add new url to db and increment count by 1
-      result = await db.collection("tinyurls").findOneAndUpdate(
+      doc = await db.collection("tinyurls").findOneAndUpdate(
         { count_id: "One" }, 
         { $inc: { counter: 1 } },
         { returnDocument: 'after'}
       );
 
-      doc = { original_url: req.body.url, short_url: result.counter };
+      doc = { original_url: req.body.url, short_url: doc.counter };
 
       await db.collection("tinyurls").insertOne(doc);
-      delete doc._id;
-
-      console.log("DOC ******", doc);
+      console.log("Insert new doc: ******", doc);
     } else {
-      doc = { original_url: result.original_url, short_url: result.short_url };
-      console.log("DOC ******", doc);
+      doc = { original_url: doc.original_url, short_url: doc.short_url };
+      console.log("Return existing doc ******", doc);
     }
     
-    // res.status(201).json(doc);
     res.json(doc);
   } catch (err) {
-    // console.error(err);
-    // res.status(404).json({ error: 'invalid url' });
+    console.error(err);
     res.json({ error: 'invalid url' });
   }
 });
@@ -91,21 +85,27 @@ app.post('/api/encodeshorturl', async (req, res) => {
   };
 
   try {
-    let result = await dns.promises.lookup(req.body.url, options);
+    const re = new RegExp('^https?:\/\/', 'i');
+    // let isValidURL = re.test(req.body.url);
+    let url = req.body.url.replace(re, '');
+    await dns.promises.lookup(url, options);
     
-    console.log('address: %j family: IPv%s', result.address, result.family);
+    // console.log('address: %j family: IPv%s', result.address, result.family);
 
-    let urlID = new ObjectId();
-    let shortURL = base62Encode(BigInt(parseInt(urlID.toHexString(), 16)));
-    let doc = { original_url: req.body.url, short_url: shortURL };
-    
-    result = await db.collection("tinyurls.b62").insertOne(doc);
-    console.log("doc", result);
+    let doc = await db.collection("tinyurls.b62").findOne({ original_url: req.body.url });
+
+    if (doc === null) {
+      let urlID = new ObjectId();
+      let shortURL = base62Encode(BigInt(parseInt(urlID.toHexString(), 16)));
+      doc = { original_url: req.body.url, short_url: shortURL };
+
+      await db.collection("tinyurls.b62").insertOne(doc);
+    }
 
     res.status(201).json(doc);
   } catch (err) {
     console.error(err);
-    res.status(404).send('Address not found.');
+    res.status(404).json({ error: 'address not found' });
   }
 });
 

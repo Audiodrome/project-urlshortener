@@ -15,6 +15,7 @@
     <h1>URL Shortener Microservice</h1>
     <main>
       <section>
+        <h3>A number is assigned to a url</h3>
         <form action="api/shorturl" method="POST">
           <fieldset>
             <legend>URL Shortener</legend>
@@ -23,7 +24,25 @@
             <input type="submit" value="POST URL" />
           </fieldset>
         </form>
+        <h3>Encodes url to base62</h3>
+        <form action="api/encodeshorturl" method="POST">
+          <fieldset>
+            <legend>URL Shortener Base62</legend>
+            <label for="url_input">URL:</label>
+            <input id="url_input" type="text" name="url" placeholder="https://www.freecodecamp.org/" />
+            <input type="submit" value="POST URL" />
+          </fieldset>
+        </form>
       </section>
+      <h2>Example Usage:</h2>
+      <a
+        href="https://url-shortener-microservice.freecodecamp.rocks/api/shorturl/3"
+      >
+        [this_project_url]/api/shorturl/3
+      </a>
+
+      <h3>Will Redirect to:</h3>
+      <p>https://forum.freecodecamp.org/</p>
     </main>
     <footer>
       <p>By <a href="https://www.freecodecamp.org/">freeCodeCamp</a></p>

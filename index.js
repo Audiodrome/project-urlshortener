@@ -27,7 +27,7 @@ app.get('/api/hello', function(req, res) {
 app.get('/api/shorturl/:shorturl', async (req, res) => {
   console.log("Params", req.params);
   try {
-    let result = await db.collection("tinyurl").findOne({ short_url: Number(req.params.shorturl) });
+    let result = await db.collection("tinyurls").findOne({ short_url: Number(req.params.shorturl) });
     console.log("Result", result);
     if (result === null || req.params.shorturl === 'undefined')
       res.redirect('http://localhost:3000');
@@ -53,11 +53,11 @@ app.post('/api/shorturl', async (req, res) => {
     let doc = {};
     // let result = await dns.promises.lookup(url, options);
     console.log("req.body.url", req.body.url);
-    let result = await db.collection("tinyurl").findOne({ original_url: req.body.url });
+    let result = await db.collection("tinyurls").findOne({ original_url: req.body.url });
     console.log("Result ******", result);
     if (result === null && isValidURL) {
       // add new url to db and increment count by 1
-      result = await db.collection("tinyurl").findOneAndUpdate(
+      result = await db.collection("tinyurls").findOneAndUpdate(
         { count_id: "One" }, 
         { $inc: { counter: 1 } },
         { returnDocument: 'after'}
@@ -65,7 +65,7 @@ app.post('/api/shorturl', async (req, res) => {
 
       doc = { original_url: req.body.url, short_url: result.counter };
 
-      await db.collection("tinyurl").insertOne(doc);
+      await db.collection("tinyurls").insertOne(doc);
       delete doc._id;
 
       console.log("DOC ******", doc);
@@ -99,7 +99,7 @@ app.post('/api/encodeshorturl', async (req, res) => {
     let shortURL = base62Encode(BigInt(parseInt(urlID.toHexString(), 16)));
     let doc = { original_url: req.body.url, short_url: shortURL };
     
-    result = await db.collection("tinyurl").insertOne(doc);
+    result = await db.collection("tinyurls.b62").insertOne(doc);
     console.log("doc", result);
 
     res.status(201).json(doc);

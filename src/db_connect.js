@@ -14,7 +14,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("test").command({ ping: 1 });
+    await client.db("devDB").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
@@ -23,14 +23,14 @@ async function run() {
 }
 run().catch(console.dir);
 
-const db = client.db("test");
+const db = client.db("devDB");
 
 // init counter for shorturls
 async function count() {
-  await db.collection("tinyurl").deleteMany({});
-  let result = await db.collection("tinyurl").findOne({ count_id: "One" });
+  await db.collection("tinyurls").deleteMany({});
+  let result = await db.collection("tinyurls").findOne({ count_id: "One" });
   if (result === null) {
-    result = await db.collection("tinyurl").insertOne({ count_id: "One", counter: 0 });
+    result = await db.collection("tinyurls").insertOne({ count_id: "One", counter: 0 });
   }
   // console.log("result", result);
 }

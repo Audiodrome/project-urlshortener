@@ -27,10 +27,7 @@ app.get('/api/hello', function(req, res) {
 app.get('/api/shorturl/:shorturl', async (req, res) => {
   console.log("Params", req.params);
   let result = await db.collection("tinyurls").findOne({ short_url: Number(req.params.shorturl) }).catch(logError);
-  // console.log("Result", result);
-  // if (result === null || req.params.shorturl === 'undefined')
-  //   res.redirect('Redirect failed.');
-  // else
+
   if (result !== null)
     res.redirect(result.original_url);
   else
@@ -39,12 +36,8 @@ app.get('/api/shorturl/:shorturl', async (req, res) => {
 
 app.get('/api/encodeshorturl/:shorturl', async (req, res) => {
   console.log("Params", req.params);
-
   let result = await db.collection("tinyurls.b62").findOne({ short_url: req.params.shorturl }).catch(logError);
-  // console.log("Result", result);
-  // if (result === null || req.params.shorturl === 'undefined')
-  //   res.redirect('Redirect failed.');
-  // else
+
   if (result !== null)
     res.redirect(301, result.original_url);
   else
@@ -57,11 +50,14 @@ app.post('/api/shorturl', async (req, res) => {
     hints: dns.ADDRCONFIG | dns.V4MAPPED,
   };
 
-  try {
-    const re = new RegExp('^https?:\/\/', 'i');
+  const re = new RegExp('^https?:\/\/', 'i');
+  let isValidURL = re.test(req.body.url);
+  let doc;
 
-    let isValidURL = re.test(req.body.url);
-    let doc = await db.collection("tinyurls").findOne({ original_url: req.body.url });
+  if (!isValidURL) {
+    doc = { error: 'invalid url' };
+  } else {
+    doc = await db.collection("tinyurls").findOne({ original_url: req.body.url }).catch(logError);
     console.log("Does doc exist?: ******", doc);
 
     if (doc === null && isValidURL) {
@@ -70,22 +66,18 @@ app.post('/api/shorturl', async (req, res) => {
         { count_id: "One" }, 
         { $inc: { counter: 1 } },
         { returnDocument: 'after'}
-      );
+      ).catch(logError);
 
       doc = { original_url: req.body.url, short_url: doc.counter };
 
-      await db.collection("tinyurls").insertOne(doc);
+      await db.collection("tinyurls").insertOne(doc).catch(logError);
       console.log("Insert new doc: ******", doc);
     } else {
       doc = { original_url: doc.original_url, short_url: doc.short_url };
       console.log("Return existing doc ******", doc);
     }
-    
-    res.json(doc);
-  } catch (err) {
-    console.error(err);
-    res.json({ error: 'invalid url' });
   }
+  res.json(doc); 
 });
 
 app.post('/api/encodeshorturl', async (req, res) => {
@@ -95,29 +87,28 @@ app.post('/api/encodeshorturl', async (req, res) => {
     hints: dns.ADDRCONFIG | dns.V4MAPPED,
   };
 
-  try {
-    const re = new RegExp('^https?:\/\/', 'i');
-    // let isValidURL = re.test(req.body.url);
-    let url = req.body.url.replace(re, '');
-    let result = await dns.promises.lookup(url, options);
-    console.log(result);
-    // console.log('address: %j family: IPv%s', result.address, result.family);
+  const re = new RegExp('^https?:\/\/', 'i');
+  let url = req.body.url.replace(re, '');
+  let statusCode;
+  let result = await dns.promises.lookup(url, options).catch(logError);
 
-    let doc = await db.collection("tinyurls.b62").findOne({ original_url: req.body.url });
+  if (result.code === 'ENOTFOUND') {
+    statusCode = 404;
+    result = { error: 'address not found' };
+  } else {
+    let doc = await db.collection("tinyurls.b62").findOne({ original_url: req.body.url }).catch(logError);
 
     if (doc === null) {
       let urlID = new ObjectId();
       let shortURL = base62Encode(BigInt(parseInt(urlID.toHexString(), 16)));
       doc = { original_url: req.body.url, short_url: shortURL };
-
-      await db.collection("tinyurls.b62").insertOne(doc);
+      await db.collection("tinyurls.b62").insertOne(doc).catch(logError);
     }
-
-    res.status(201).json(doc);
-  } catch (err) {
-    console.error(err);
-    res.status(404).json({ error: 'address not found' });
+    statusCode = 201;
+    result = doc;
   }
+
+  res.status(statusCode).json(result);
 });
 
 app.listen(port, function() {
@@ -126,4 +117,5 @@ app.listen(port, function() {
 
 function logError(err) {
   console.error(err);
+  return err;
 }

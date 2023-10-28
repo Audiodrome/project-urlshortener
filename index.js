@@ -26,18 +26,29 @@ app.get('/api/hello', function(req, res) {
 
 app.get('/api/shorturl/:shorturl', async (req, res) => {
   console.log("Params", req.params);
-  try {
-    let result = await db.collection("tinyurls").findOne({ short_url: Number(req.params.shorturl) });
-    console.log("Result", result);
-    if (result === null || req.params.shorturl === 'undefined')
-      res.redirect('http://localhost:3000');
-    else
-      // res.redirect(301, result.original_url);
-      res.redirect(result.original_url);
-  } catch (err) {
-    console.error(err);
+  let result = await db.collection("tinyurls").findOne({ short_url: Number(req.params.shorturl) }).catch(logError);
+  // console.log("Result", result);
+  // if (result === null || req.params.shorturl === 'undefined')
+  //   res.redirect('Redirect failed.');
+  // else
+  if (result !== null)
+    res.redirect(result.original_url);
+  else
     res.send('Redirect failed.');
-  }
+});
+
+app.get('/api/encodeshorturl/:shorturl', async (req, res) => {
+  console.log("Params", req.params);
+
+  let result = await db.collection("tinyurls.b62").findOne({ short_url: req.params.shorturl }).catch(logError);
+  // console.log("Result", result);
+  // if (result === null || req.params.shorturl === 'undefined')
+  //   res.redirect('Redirect failed.');
+  // else
+  if (result !== null)
+    res.redirect(301, result.original_url);
+  else
+    res.send('Redirect failed.');
 });
 
 app.post('/api/shorturl', async (req, res) => {
@@ -88,8 +99,8 @@ app.post('/api/encodeshorturl', async (req, res) => {
     const re = new RegExp('^https?:\/\/', 'i');
     // let isValidURL = re.test(req.body.url);
     let url = req.body.url.replace(re, '');
-    await dns.promises.lookup(url, options);
-    
+    let result = await dns.promises.lookup(url, options);
+    console.log(result);
     // console.log('address: %j family: IPv%s', result.address, result.family);
 
     let doc = await db.collection("tinyurls.b62").findOne({ original_url: req.body.url });
@@ -112,3 +123,7 @@ app.post('/api/encodeshorturl', async (req, res) => {
 app.listen(port, function() {
   console.log(`Listening on port ${port}`);
 });
+
+function logError(err) {
+  console.error(err);
+}

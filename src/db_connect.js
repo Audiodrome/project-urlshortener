@@ -27,7 +27,7 @@ const db = client.db("devDB");
 
 // init counter for shorturls
 async function count() {
-  await db.collection("tinyurls").deleteMany({});
+  // await db.collection("tinyurls").deleteMany({});
   let result = await db.collection("tinyurls").findOne({ count_id: "One" });
   if (result === null) {
     result = await db.collection("tinyurls").insertOne({ count_id: "One", counter: 0 });

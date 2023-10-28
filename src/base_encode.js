@@ -18,7 +18,6 @@ function base62Encode(n, cypher = ALPHA_NUM) {
     encode = cypher[R] + encode;
   }
   
-  console.log(encode);
   return encode;
 }
 

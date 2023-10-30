@@ -96,18 +96,18 @@ app.post('/api/encodeshorturl', async (req, res) => {
     statusCode = 404;
     result = { error: 'address not found' };
   } else {
-    let doc = await db.collection("tinyurls.b62").findOne({ original_url: req.body.url }).catch(logError);
+    url = `https://${url}`; 
+    let doc = await db.collection("tinyurls.b62").findOne({ original_url: url }).catch(logError);
 
     if (doc === null) {
       let urlID = new ObjectId();
       let shortURL = base62Encode(BigInt(parseInt(urlID.toHexString(), 16)));
-      doc = { original_url: req.body.url, short_url: shortURL };
+      doc = { original_url: url, short_url: shortURL };
       await db.collection("tinyurls.b62").insertOne(doc).catch(logError);
     }
     statusCode = 201;
     result = doc;
   }
-
   res.status(statusCode).json(result);
 });
 
